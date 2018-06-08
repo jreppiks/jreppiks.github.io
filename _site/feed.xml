@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+	<channel>
+		<title>hateshape</title>
+		<description></description>
+		<link>/</link>
+		<atom:link href="/feed.xml" rel="self" type="application/rss+xml" />
+		
+			<item>
+				<title>CVE-2018-8819</title>
+				<description>&lt;p&gt;I like to do bug bounties from time to time. Mostly when I am sacrificing sleep once the kids are finally out cold and this seemed like a worthy experience to document. Let me just start by saying I don’t plan on going into the whole recon bits too deep here. Maybe I will someday if I ever have enough time to give the topic the justice it deserves. Needless to say, do it. It is important. In the meantime, I suggest you learn from legit folks. I will point you to two of my favorites which are:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Jason Haddix (@Jhaddix) – Bug Bounty Hunting Methodology v3&lt;br /&gt;
+&lt;a href=&quot;https://www.youtube.com/watch?v=Qw1nNPiH_Go&quot;&gt;https://www.youtube.com/watch?v=Qw1nNPiH_Go&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;Ben Sadeghipour (@nahamsec) – HOW TO: RECON AND CONTENT DISCOVERY
+&lt;a href=&quot;https://www.hackerone.com/blog/how-to-recon-and-content-discovery&quot;&gt;https://www.hackerone.com/blog/how-to-recon-and-content-discovery&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;With all props given and everything else said above, I found this issue in the process of testing a bug bounty program (BBP). The bounty had a wide scope that included anything owned by the program, which I wish all of the others would adopt such a model, but I digress. Upon doing my initial recon, I found a web server listening on a non-standard port with an exposed login page.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/media/posts/webctrl/webctrl-login.png&quot; alt=&quot;webctrl-login.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;From my recon I said I wasn’t going to bring up, but can’t stop referencing, I determined this was WebCTRL v6.1 by navigating to http://target/_common/lvl5/help/webctrl/. Within that help page there was a reference to “What’s new in v6.1”.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/media/posts/webctrl/autologic1.png&quot; alt=&quot;autologic1.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;After determining the (likely) version, I googled WebCTRL version 6.1 exploits. The results of which claimed that version 6.1 was vulnerable to an unauthenticated External Entity Injection (XXE) disclosed in CVE-2016-5795 (&lt;a href=&quot;https://nvd.nist.gov/vuln/detail/CVE-2016-5795&quot;&gt;https://nvd.nist.gov/vuln/detail/CVE-2016-5795&lt;/a&gt;). Unauthenticated you say? Queue excitement. However, I then read the CVE and had to withdraw my excitement.  According to the CVE, there was no publically available exploit code associated with this CVE. Of course, it had to be one of those bull crap undisclosed vulnerabilities.&lt;/p&gt;
+
+&lt;p&gt;With that I felt like giving up, but I was bored and had nowhere to be so I said screw it. I have exploited a few of those web things in my time, maybe I could find out how to exploit that undisclosed CVE. It is unauthenticated, so how many places could that thing be hiding? Well fast forward to the point I had exhausted my limited abilities, I realized one of my favorite Burp extensions, Burp Collaborator, was not loaded. With Collaborator on I browsed all of that initial login page (So a single page) and then I saw that beautiful red text flashing in Burp. Red, being the best of the flashing Burp colors. This is what I saw:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/media/posts/webctrl/webctrl-collabs.png&quot; alt=&quot;webctrl-collabs.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;I have done this long enough now that I usually have an idea about what the underlying issue is when that ominous and concerning looking red exclamation point shows up. Luckiliy, this time was no different. Except this time James Kettle saved me tons of research time as this issue was specifically described in “Cracking the Lens: Targeting HTTP’s Hidden Attack-Surface. I had read this previously. You too can read it:&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://blog.portswigger.net/2017/07/cracking-lens-targeting-https-hidden.html&quot;&gt;http://blog.portswigger.net/2017/07/cracking-lens-targeting-https-hidden.html&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;I have never met the man, but his stuff is awesome and luckily for me it was specifically relevant to this post. Since Mr. Kettle already described the issues that plague the “X-Wap-Profile” HTTP header well in the blog post previously mentioned, I will borrow his description. Please give him all the credits!&lt;/p&gt;
+
+&lt;p&gt;“X-Wap-Profile is an ancient HTTP header which should specify a URL to the device’s User Agent Profile (UAProf), an XML document which defines device capabilities such as screen size, bluetooth support, supported protocols and charsets”&lt;/p&gt;
+
+&lt;p&gt;“Compliant applications will extract the URL from this header, then fetch and parse the specified XML document so they can tailor the content they supply to the client. This combination of two high risk pieces of functionality - fetching untrusted URLs and parsing untrusted XML - with obscure and easily-missed functionality seems ripe for exploitation.“&lt;/p&gt;
+
+&lt;p&gt;So who doesn’t like high risk functionality? Let alone two pieces? I for one like my odds significantly better when I am trying (lets be real, usually failing) to exploit a target when it changes from one in a million to two!&lt;/p&gt;
+
+&lt;p&gt;Per the description given by James Kettle above, the X-Wap-Profile header caused the web application to make an external HTTP request to the Burp Collaborator server. At this point, even I could see the obvious next step of changing the value to my VPS and to a file that did exist in my web root. Then all that was left was to hope and wait that it made the request there instead (I knew it would with the Collaborator shenanigans, but people like the drama, right?).&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/media/posts/webctrl/webctrl-some-file.png&quot; alt=&quot;webctrl-some-file.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;It did.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/media/posts/webctrl/webctrl-no-some-file.png&quot; alt=&quot;webctrl-no-some-file.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Re-Queue excitement? I got burned before with excitement so it was clearly too early for that. At this point I had the vulnerable application making arbitrary GET requests looking for an XML file. So why not plop a nice XXE payload into the XML file that the X-Wap-Profile header now desires?&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/media/posts/webctrl/webctrl-tnm.png&quot; alt=&quot;webctrl-tnm.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;What is a malicious XXE payload without a nice DTD file to go along with it? We absolutely want one of those!&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/media/posts/webctrl/webctrl-okil.png&quot; alt=&quot;webctrl-okil.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;So here goes the whole thing (This was accomplished on the first try of course):&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;Using Burp, a request was made to the http://target where the “X-Wap-Profile” header is added with a reference to “totally-not-malicious.xml” hosted on my VPS.&lt;/p&gt;
+
+    &lt;p&gt;&lt;img src=&quot;/assets/media/posts/webctrl/webctrl-http.png&quot; alt=&quot;webctrl-http.png&quot; /&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;The vulnerable web application successfully made a GET request to my VPS and obtained a copy of my “totally-not-malicious.xml” file (I lied. It was.).&lt;/li&gt;
+  &lt;li&gt;The vulnerable web application parsed my “totally-not-malicious.xml” file, where it found the secondary reference to my “ok-i-lied.dtd” DTD file (this is also where I told the truth to the vulnerable application) again hosted on my VPS.&lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Since the XML parser was configured to process external entities the vulnerable web application then made a second HTTP GET request to my VPS where it requested my “ok-i-lied” DTD file.&lt;/p&gt;
+
+    &lt;p&gt;&lt;img src=&quot;/assets/media/posts/webctrl/exploit-webctrl.png&quot; alt=&quot;exploit-webctrl.png&quot; /&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;The vulnerable web application parsed my “ok-i-lied.dtd” DTD file and ultimately sent the underlying operating system’s “win.ini” file to my emulated FTP server that was listening on port 2121. “My” emulated FTP server is only mine in the specific running instance sense, the server used was in fact “https://github.com/ONsec-Lab/scripts/blob/master/xxe-ftp-server.rb”.&lt;/p&gt;
+
+    &lt;p&gt;&lt;img src=&quot;/assets/media/posts/webctrl/webctrl-win-inis.png&quot; alt=&quot;webctrl-win-inis.png&quot; /&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;A more clear view of the file that was exfiltrated can be seen in the log file produced by emulated FTP server.&lt;/p&gt;
+
+    &lt;p&gt;&lt;img src=&quot;/assets/media/posts/webctrl/webctrl-win-ini-content.png&quot; alt=&quot;webctrl-win-ini-content.png&quot; /&gt;&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Halle-freaking-lujah. That there is an exploited Out-of-Band (OOB) XXE of the undisclosed CVE type. But little did I know how undisclosed that CVE was (Foreshadowing for dramatic effects).&lt;/p&gt;
+
+&lt;p&gt;I was almost certain that I had found the same thing that was covered by CVE-2016-5795. It covers an XXE that was unauthenticated, I found an OOB XXE that was unauthenticated. But I said, “what the hey”, in the off chance that it wasn’t the same issue I decided to contact AutomatedLogic just for fun. Not to leave anyone in suspense for too long as to what happened, but I was very impressed by AutomatedLogic’s response time and their willingness to review my findings. From those conversations, I found out … wait for it … wait for it … that this was not the same issue that CVE-2016-5795 was based on. I did not find that undisclosed XXE that I was seeking, however, I found a new one, CVE-2018-8819!&lt;/p&gt;
+
+&lt;p&gt;Not that anyone who has made it this far cares too much whether or not I got paid, but I mentioned previously that I found this issue while testing a BBP. What happened? I submitted my report to the awesome folks at Bugcrowd (try them you shall see how awesome they are) and it was quickly Triaged. A quite awesome feeling on its own, but even better in this instance now that I had CVE-2018-8819 in my back pocket. However, sadly that quite awesome feeling quickly dissipated. The scope of the BBP was “anything owned by the program” and while the ARIN record stated that my target was owned by that BBP, it wasn’t. It turns out that the BBP had absolutely owned the IP address range in the past, but not for several years. The ARIN record had not been updated and unfortunately my report went from Triaged to N/A. Of course.&lt;/p&gt;
+
+</description>
+				<pubDate>Thu, 07 Jun 2018 00:00:00 -0600</pubDate>
+				<link>/general/2018/06/07/CVE-2018-8819.html</link>
+				<guid isPermaLink="true">/general/2018/06/07/CVE-2018-8819.html</guid>
+			</item>
+		
+			<item>
+				<title>hateshape?</title>
+				<description>&lt;p&gt;So hateshape huh? So you people don’t think I hate you (and I might now after requiring that I have to explain myself), the following is the origin that is hateshape.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;This origin requires that we turn to an obvious source to understand why. The Drew Carey Show.&lt;/li&gt;
+  &lt;li&gt;In one episode, there was a plot where Drew had to pass an insurance physical or be fired.&lt;/li&gt;
+  &lt;li&gt;He didn’t think he could pass it, so he tagged in his buddy Lewis.&lt;/li&gt;
+  &lt;li&gt;Plot twist: The physical included a Mental Health screening and Lewis is not quite all there upstairs.&lt;/li&gt;
+  &lt;li&gt;Lewis answered the questions how he thought Drew would answer them&lt;/li&gt;
+  &lt;li&gt;When asked to “Describe Himself” he wrote “Hatred Shaped Like a Man”&lt;/li&gt;
+  &lt;li&gt;This was funny to me so I went with as username until I had to type that twice. so I shortened it&lt;/li&gt;
+  &lt;li&gt;At this point it is too late to change it. So hateshape.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Luckily, from a recent slide deck I have this handy visual aid.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/media/posts/hateshape/why-hateshape.png&quot; alt=&quot;why-hateshape.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Please refer to it as needed. That is all.&lt;/p&gt;
+</description>
+				<pubDate>Sun, 27 May 2018 00:00:00 -0600</pubDate>
+				<link>/general/2018/05/27/CVE-hate-and-hateshape.html</link>
+				<guid isPermaLink="true">/general/2018/05/27/CVE-hate-and-hateshape.html</guid>
+			</item>
+		
+	</channel>
+</rss>

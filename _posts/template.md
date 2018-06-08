@@ -1,0 +1,83 @@
+---
+layout: post
+title: XXE Fun
+categories: [general, setup, demo]
+tags: [demo, dbyll, dbtek, setup]
+comments: true
+---
+
+
+I like to do bug bounties from time to time. Mostly when I am sacrificing sleep once the kids are finally out cold and this seemed like a worthy experience to document. Let me just start by saying I don’t plan on going into the whole recon bits too deep here. Maybe I will someday if I ever have enough time to give the topic the justice it deserves. Needless to say, do it. It is important. In the meantime, I suggest you learn from legit folks. I will point you to several of my favorites which are:
+
+1. Jason Haddix (@Jhaddix) – Bug Bounty Hunting Methodology v2 
+[https://www.youtube.com/watch?v=C4ZHAdI8o1w](https://www.youtube.com/watch?v=C4ZHAdI8o1w)
+1. Ben Sadeghipour (@nahamsec) – HOW TO: RECON AND CONTENT DISCOVERY
+[https://www.hackerone.com/blog/how-to-recon-and-content-discovery](https://www.hackerone.com/blog/how-to-recon-and-content-discovery)
+
+With all props given and everything else said above, I found this issue in the process of testing a bug bounty program (BBP). The bounty had a wide scope that included anything owned by the program, which I wish all of the others would adopt such a model, but I digress. Upon doing my initial recon, I found a web server listening on a non-standard port with an exposed login page.
+
+![webctrl-login.png]({{site.baseurl}}/assets/media/posts/webctrl/webctrl-login.png)
+
+From my recon I said I wasn’t going to bring up, but can’t stop referencing, I determined this was WebCTRL v6.1 by navigating to http://target/_common/lvl5/help/webctrl/. Within that help page there was a reference to “What’s new in v6.1”. 
+
+![autologic1.png]({{site.baseurl}}/assets/media/posts/webctrl/autologic1.png)
+
+After determining the (likely) version, I googled (Wow can’t believe Microsoft Word doesn’t throw a conniption fit over the word googled.) WebCTRL version 6.1 exploits. The results of which claimed that version 6.1 was vulnerable to an unauthenticated External Entity Injection (XXE) disclosed in CVE-2016-5795 ([https://nvd.nist.gov/vuln/detail/CVE-2016-5795](https://nvd.nist.gov/vuln/detail/CVE-2016-5795)). Unauthenticated you say? Queue excitement. However, I then read the CVE and had to withdraw my excitement.  According to the CVE, there was no publically available exploit code associated with this CVE. Of course, it had to be one of those bull crap undisclosed vulnerabilities. 
+
+With that I felt like giving up, but I was bored and had nowhere to be so I said screw it. I have exploited a few of those web things in my time, maybe I could find out how to exploit that undisclosed CVE. It is unauthenticated, so how many places could that thing be hiding? Well fast forward to the point I had exhausted my limited abilities, I realized one of my favorite Burp extensions, Burp Collaborator, was not loaded. With Collaborator on I browsed all of that initial login page (So a single page) and then I saw that beautiful red text flashing in Burp. Red, being the best of the flashing Burp colors. This is what I saw:
+
+![webctrl-collabs.png]({{site.baseurl}}/assets/media/posts/webctrl/webctrl-collabs.png)
+
+I have done this long enough now that I usually have an idea about what the underlying issue is when that ominous and concerning looking red exclamation point shows up. Here, I had no flipping idea what an X-Wap-Profile header was. So off to Google yet again. On the first page of search results I saw Cracking the Lens: Targeting HTTP's Hidden Attack-Surface by one James Kettle. I had read this previously, but I didn’t remember the X-Wap-Profile header. You too can read it:
+
+[http://blog.portswigger.net/2017/07/cracking-lens-targeting-https-hidden.html](http://blog.portswigger.net/2017/07/cracking-lens-targeting-https-hidden.html)
+
+I have never met the man, but his stuff is “Bigly / Big League (He totally didn’t say that, if you get the reference) / Just dang good” and luckily for me it is specifically relevant to this post. Since Mr. Kettle already described the header well in the blog post previously mentioned, I will borrow his description, give him all the credits!
+
+“X-Wap-Profile is an ancient HTTP header which should specify a URL to the device's User Agent Profile (UAProf), an XML document which defines device capabilities such as screen size, bluetooth support, supported protocols and charsets”
+
+“Compliant applications will extract the URL from this header, then fetch and parse the specified XML document so they can tailor the content they supply to the client. This combination of two high risk pieces of functionality - fetching untrusted URLs and parsing untrusted XML - with obscure and easily-missed functionality seems ripe for exploitation.“
+
+So who doesn’t like high risk functionality? Let alone two pieces? I for one like my odds significantly better when I am trying (lets be real, usually failing) to exploit a target when it changes from one in a million to two!
+
+Per the description given by James Kettle above, the X-Wap-Profile header caused the web application to make an external HTTP request to the Burp Collaborator server. At this point, even I could see the obvious next step of changing the value to my VPS and to a file that did exist in my web root. Then all that was left was to hope and wait that it made the request there instead (I knew it would with the Collaborator shenanigans, but people like the drama, right?). 
+
+![webctrl-some-file.png]({{site.baseurl}}/assets/media/posts/webctrl/webctrl-some-file.png)
+
+It did. 
+
+![webctrl-no-some-file.png]({{site.baseurl}}/assets/media/posts/webctrl/webctrl-no-some-file.png)
+
+Re-Queue excitement? I got burned before with excitement so it was clearly too early for that. At this point I had the vulnerable application making arbitrary GET requests looking for an XML file. So why not plop a nice XXE payload into the XML file that the X-Wap-Profile header now desires? 
+
+![webctrl-tnm.png]({{site.baseurl}}/assets/media/posts/webctrl/webctrl-tnm.png)
+
+What is a malicious XXE payload without a nice DTD file to go along with it? We absolutely want one of those!
+
+![webctrl-okil.png]({{site.baseurl}}/assets/media/posts/webctrl/webctrl-okil.png)
+
+So here goes the whole thing (This was accomplished on the first try of course):
+1. Using Burp, a request was made to the http://target where the “X-Wap-Profile” header is added with a reference to “totally-not-malicious.xml” hosted on my VPS. 
+
+![webctrl-http.png]({{site.baseurl}}/assets/media/posts/webctrl/webctrl-http.png)
+
+2. The vulnerable web application successfully made a GET request to my VPS and obtained a copy of my “totally-not-malicious.xml” file (I lied. It was.).
+3. The vulnerable web application sent my “totally-not-malicious.xml” file to its XML parser, where it parsed the file and found the secondary reference to my “ok-i-lied.dtd” DTD file (this is also where I told the truth to the vulnerable application) again hosted on my VPS. 
+4. The vulnerable web application then made a second HTTP GET request to my VPS where it requested my “ok-i-lied.dtd” DTD file.
+
+![exploit-webctrl.png]({{site.baseurl}}/assets/media/posts/webctrl/exploit-webctrl.png)
+
+5. The vulnerable web application sent my “ok-i-lied.dtd” DTD file to its XML parser, where it parsed the file and found my request that it send the underlying operating system’s “win.ini” file to my emulated FTP server that was listening on port 2121.
+
+![webctrl-rubyftp.png]({{site.baseurl}}/assets/media/posts/webctrl/webctrl-rubyftp.png)
+
+6. After parsing the DTD file the application generously sent my emulated FTP server the requested “win.ini” file.
+
+![webctrl-win-inis.png]({{site.baseurl}}/assets/media/posts/webctrl/webctrl-win-inis.png)
+
+Halle-freaking-lujah. That there is an exploited Out-of-Band (OOB) XXE of the undisclosed CVE type. But little did I know how undisclosed that CVE was (Foreshadowing for dramatic effects). 
+
+I was almost certain that I had found the same thing that was covered by CVE-2016-5795. It covers an XXE that was unauthenticated, I found an OOB XXE that was unauthenticated. But I said, “what the hey”, in the off chance that it wasn’t the same issue I decided to contact AutomatedLogic just for fun. Not to leave anyone in suspense for too long as to what happened, but I was very impressed by AutomatedLogic’s response time and their willingness to review my findings. From those conversations, I found out … wait for it … wait for it … that this was not the same issue that CVE-2016-5795 was based on. I did not find that undisclosed XXE that I was seeking, however, I found a new one,  CVE-2018-8819!
+
+Not that anyone who has made it this far cares too much whether or not I got paid, but I mentioned previously that I found this issue while testing a BBP. What happened? I submitted my report to the awesome folks at Bugcrowd (try them you shall see how awesome they are) and it was quickly Triaged. A quite awesome feeling on its own, but even better in this instance now that I had CVE-2018-8819 in my back pocket. However, sadly that quite awesome feeling quickly dissipated. The scope of the BBP was “anything owned by the program” and while the ARIN record stated that my target was owned by that BBP, it wasn’t. It turns out that the BBP had absolutely owned the IP address range in the past, but not for several years. The ARIN record had not been updated and unfortunately my report went from Triaged to N/A. Of course.
+
