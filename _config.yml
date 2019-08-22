@@ -24,8 +24,8 @@ author:
   twitter: jreppiks
   #pinterest: 
   #linkedin: 
-  bio: I love lamp
-  email_md5: 422acc4bdc4f248604160e20ae64f810 
+  #bio: I love lamp
+  #email_md5: 422acc4bdc4f248604160e20ae64f810 
 
 rss_path: feed.xml
 categories_path: categories.html
