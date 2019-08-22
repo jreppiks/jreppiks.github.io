@@ -1,0 +1,17 @@
+---
+layout: post
+title: Deserialized Double Dirty
+categories: [general, setup, demo]
+tags: [demo, dbyll, dbtek, setup]
+comments: true
+---
+
+With all props given and everything else said above, I found this issue in the process of testing a bug bounty program (BBP). The bounty had a wide scope that included anything owned by the program, which I wish all of the others would adopt such a model, but I digress. Upon doing my initial recon, I found a web server listening on a non-standard port with an exposed login page.
+
+![webctrl-login.png]({{site.baseurl}}/assets/media/posts/webctrl/webctrl-login.png)
+
+
+I have done this long enough now that I usually have an idea about what the underlying issue is when that ominous and concerning looking red exclamation point shows up. Here, I had no flipping idea what an X-Wap-Profile header was. So off to Google yet again. On the first page of search results I saw Cracking the Lens: Targeting HTTP's Hidden Attack-Surface by one James Kettle. I had read this previously, but I didn’t remember the X-Wap-Profile header. You too can read it:
+
+[http://blog.portswigger.net/2017/07/cracking-lens-targeting-https-hidden.html](http://blog.portswigger.net/2017/07/cracking-lens-targeting-https-hidden.html)
+
