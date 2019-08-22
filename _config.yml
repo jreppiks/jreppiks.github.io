@@ -1,5 +1,5 @@
 # visit https://github.com/mojombo/jekyll/wiki/Configuration for more settings
-
+theme: jekyll-theme-midnight
 paginate: 10 # pagination based on number of posts
 paginate_path: "page:num"
 exclude: ["README.md"] # files to exclude
@@ -7,24 +7,24 @@ highlighter: rouge
 markdown: kramdown
 disqus: 
 google_analytics: 
-title: hateshape
+title: jreppiks
 
 defaults:
   -
     scope:
       path: "" # empty string for all files
     values:
-      title: hateshape
+      title: jreppiks
 
 description: 
 author:
-  name: hateshape
-  email: hateshape@gmail.com 
-  github: hateshape
-  twitter: hateshaped
+  name: jreppiks
+  email: jreppiks@gmail.com 
+  github: jreppiks
+  twitter: jreppiks
   #pinterest: 
   #linkedin: 
-  bio: I hate lamp
+  bio: I love lamp
   email_md5: 422acc4bdc4f248604160e20ae64f810 
 
 rss_path: feed.xml
