@@ -7,7 +7,7 @@ comments: true
 ---
 Recently I was able to fully root an NetApp OnCommand Performance Manager appliance using a Java Deserialization vulnerability and Dirty Cow.  
 
-Disclaimer: NetApp has security patches for both of these issues. This appliance simply had not been updated.
+**Disclaimer: NetApp has security patches for both of these issues. This appliance simply had not been updated.**
 
 Late last year I ran into a device that was vulnerable to [CVE-2017-12149](https://nvd.nist.gov/vuln/detail/CVE-2017-12149) and was able to get a shell on that device. After using [Ysoserial](https://github.com/frohoff/ysoserial) and loading in the payloads in Burp Repeater (pro tip from @hateshaped: right click -> paste from file), I wanted to automate the building and delivery of the payload. I knew @byt3bl33d3r had a quite a few of these scripts on [Coalfire Lab's Github](https://github.com/Coalfire-Research/java-deserialization-exploits) so I modified a similar JBoss script for this specific vulnerability. The PoC can be found [here](https://github.com/jreppiks/CVE-2017-12149.git)
 
