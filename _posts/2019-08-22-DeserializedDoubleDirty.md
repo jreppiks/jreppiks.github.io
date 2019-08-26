@@ -2,14 +2,14 @@
 layout: post
 title: Deserialized Double Dirty
 categories: [pentest, exploits]
-tags: [java, deserialization, jboss, dirtycow, privilege escalation]
+tags: [java, deserialization, jboss, dirtycow, privilege escalation, CVE-2017-12149, netapp]
 comments: true
 ---
-Recently I was able to fully root an NetApp OnCommand Performance Manager appliance using a Java Deserialization vulnerability and Dirty Cow.  
+Recently I was able to fully root a NetApp OnCommand Performance Manager appliance using a Java Deserialization vulnerability and Dirty Cow.  
 
 **Disclaimer: NetApp has security patches for both of these issues. This appliance simply had not been updated.**
 
-Late last year I ran into a device that was vulnerable to [CVE-2017-12149](https://nvd.nist.gov/vuln/detail/CVE-2017-12149) and was able to get a shell on that device. After using [Ysoserial](https://github.com/frohoff/ysoserial) and loading in the payloads in Burp Repeater (pro tip from @hateshaped: right click -> paste from file), I wanted to automate the building and delivery of the payload. I knew @byt3bl33d3r had a quite a few of these scripts on [Coalfire Lab's Github](https://github.com/Coalfire-Research/java-deserialization-exploits) so I modified a similar JBoss script for this specific vulnerability. The PoC can be found [here](https://github.com/jreppiks/CVE-2017-12149.git)
+Late last year I ran into a device that was vulnerable to [CVE-2017-12149](https://nvd.nist.gov/vuln/detail/CVE-2017-12149) and was able to get a shell on that device. After using [Ysoserial](https://github.com/frohoff/ysoserial) and loading in the payloads in Burp Repeater (pro tip from [@hateshaped:](https://twitter.com/hateshaped) right click -> paste from file), I wanted to automate the building and delivery of the payload. I knew [@byt3bl33d3r](https://twitter.com/byt3bl33d3r) had a quite a few of these scripts on [Coalfire Lab's Github](https://github.com/Coalfire-Research/java-deserialization-exploits) so I modified a similar JBoss script for this specific vulnerability. The PoC can be found [here](https://github.com/jreppiks/CVE-2017-12149.git)
 
 So when this popped up again, I was super excited. The system had a "modern" version of netcat, so ```nc -e``` worked just fine to grab a shell. 
 ```
@@ -34,7 +34,7 @@ Typical "firefartage" one does ```su - firefart``` or ```ssh firefart@<ip>```. H
 
  
   
-SSH was also a bust. The ssh server on the system was set up so only members of the maintenance group could log in and it could not be a root user. I decided to modify Firefart's code and make the firefart user an non-root user and add them to the maintenace group. I ran the exploit and it created the user! I was now able to ssh into the device. I was still not root, though. So, I ran the original exploit again thinking I could then just ```su - firefart```. When I tried that, it failed with an error: ```I have no name!``` 
+SSH was also a bust. The ssh server on the system was set up so only members of the maintenance group could log in and it could not be a root user. I decided to modify Firefart's code and make the firefart user a non-root user and add them to the maintenace group. I ran the exploit and it created the user! I was now able to ssh into the device. I was still not root, though. So, I ran the original exploit again thinking I could then just ```su - firefart```. When I tried that, it failed with an error: ```I have no name!``` 
 
 Even running the script twice with two different usernames ended in the same error. I decided I needed to modify the exploit code again to add both users at the same time. You can grab the modified code I lovingly named doubledirty [here](https://github.com/jreppiks/doubledirty.git) Please be kind, I am not a developer, but it complied and ran on the very first time, that has to count for something, right?!
 
