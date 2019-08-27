@@ -7,6 +7,7 @@ comments: true
 ---
 
 It was a dark night. A car pulled up in the parking space next to me and quickly extinguished his lights. I looked out the my window and saw the driver. He gave me a quick nod and we exited our cars. Opening the trunk I pulled out my tools for the night. A backpack full of trash bags, a flash light, gloves, a tarp and oily rags taken from the garage. We walked in the warm summer air up a hill and to the street corner where the target was finally in view. There was the bank. 
+
 Tonight was just recon, getting a lay of the land and some dumpster diving. We approached the bank and made a quick walk around the block identifying windows, entries and exits and connecting the dots of what I found on Google Maps. By the cover of trees we started down an embankment towards the dumpster, but we spotted a police car. Trying not to cause any suspicion, we quickly made our way back to the sidewalk and walked away from the bank. My heart was racing. I didn't want to fail even before we started. After we walked a half block we circled back and hurried down the embankment again. Entering the dumpster enclosure I could relax. No one would be able to see us from here. We brought out our flashlights and opened the dumpster lid -- just two bags of trash.
 
 "Let’s just take the bags," my co-worker said.
