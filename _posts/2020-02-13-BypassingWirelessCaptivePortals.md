@@ -5,7 +5,6 @@ categories: [pentest, wireless, bypass]
 tags: [captive portal, wireless, bypass]
 comments: true
 ---
-# Bypassing Wireless Captive Portals
 
 Ocassionally, on client projects I come across Guest Wireless Networks that require a login after connecting for further network/Internet access. 
 In many cases this can be bypassed by spoofing the MAC address of a client that has already connected and authenticated to an AP.  The reason this works is that an authenticated user’s MAC is given an IP that is allowed on the network, so when spoofing a MAC address, there is no need to authenticate as the MAC address is already allowed on the network. The steps below can be used to obtain a MAC address, spoof it and reconnect to an AP bypassing the captive portal login.
